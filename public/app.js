@@ -847,6 +847,31 @@ function renderTv() {
   $('tvDoneCount').textContent = done;
 }
 
+// Riclassificazione generale
+$$('.reclassAllBtn').forEach((btn) =>
+  btn.addEventListener('click', async () => {
+    const openCount = tasks.filter((t) => t.status !== 'done' && !t.pending).length;
+    if (!openCount) return alert('Non ci sono attività da fare da riclassificare.');
+    if (!confirm(`Riclassificare con l'AI le ${openCount} attività da fare? Titolo e tag verranno riassegnati (gli assegnatari restano).`)) return;
+    $$('.reclassAllBtn').forEach((b) => {
+      b.disabled = true;
+      b.textContent = '⏳';
+    });
+    try {
+      const result = await api('/api/tasks/reclassify-all', { method: 'POST' });
+      await loadTasks();
+      showToast(`${result.updated} attività riclassificate ✨`, []);
+    } catch (err) {
+      alert(`Errore: ${err.message}`);
+    }
+    $$('.reclassAllBtn').forEach((b) => {
+      b.disabled = false;
+      b.textContent = '✨';
+    });
+    renderAll();
+  })
+);
+
 $('tvExit').addEventListener('click', exitTv);
 $('tvBtnD').addEventListener('click', enterTv);
 $('tvBtnM').addEventListener('click', enterTv);
@@ -994,6 +1019,24 @@ function fillDatalist(id, values, defaults) {
   }
 }
 
+let editOwners = new Set();
+
+function renderOwnerPicker() {
+  const names = [...new Set([...(config.users || []), ...editOwners])];
+  $('ownerPicker').replaceChildren(
+    ...names.map((name) => {
+      const b = el('button', 'pchip' + (editOwners.has(name) ? ' on' : ''), name);
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        if (editOwners.has(name)) editOwners.delete(name);
+        else editOwners.add(name);
+        renderOwnerPicker();
+      });
+      return b;
+    })
+  );
+}
+
 function openEdit(t) {
   editingTask = t;
   $('editTitle').textContent = t.num ? `Modifica attività #${t.num}` : 'Modifica attività';
@@ -1003,7 +1046,8 @@ function openEdit(t) {
   editForm.category.value = t.category || '';
   editForm.due_date.value = t.due_date || '';
   editForm.cost.value = t.cost ? Math.round(t.cost) : '';
-  editForm.owners.value = ownersOf(t).join(', ');
+  editOwners = new Set(ownersOf(t));
+  renderOwnerPicker();
   editForm.priority.value = t.priority || 'media';
   editForm.notes.value = t.notes || '';
   fillDatalist('storeOptions', tasks.flatMap(storesOf), ['IKEA', 'Leroy Merlin', 'Brico', 'OBI', 'Amazon', 'Supermercato', 'Ferramenta']);
@@ -1021,7 +1065,7 @@ editForm.addEventListener('submit', async () => {
     category: editForm.category.value.trim(),
     due_date: editForm.due_date.value,
     cost: editForm.cost.value ? Number(editForm.cost.value) : '',
-    owners: splitList(editForm.owners.value).join(', '),
+    owners: [...editOwners].join(', '),
     priority: editForm.priority.value,
     notes: editForm.notes.value.trim(),
   };

@@ -46,6 +46,7 @@
       <div class="spacer"></div>
       <div class="progress-pill"><span id="progressLabelD">0% fatte</span><div class="progress-ring" id="progressRing"><div class="inner" id="doneCountD">0</div></div></div>
       <div class="mini-actions">
+        <button class="icon-btn reclassAllBtn" title="Riclassifica tutte le attività da fare">✨</button>
         <button class="icon-btn" id="tvBtnD" title="Modalità TV">📺</button>
         <button class="icon-btn adminBtn" title="Gestione utenti" hidden>👥</button>
         <button class="icon-btn logoutBtn" title="Esci">⏻</button>
@@ -65,6 +66,7 @@
         </div>
         <div class="mheader-side">
           <div class="mini-actions">
+            <button class="icon-btn reclassAllBtn" title="Riclassifica tutte le attività da fare">✨</button>
             <button class="icon-btn" id="tvBtnM" title="Modalità TV">📺</button>
             <button class="icon-btn adminBtn" title="Gestione utenti" hidden>👥</button>
             <button class="icon-btn logoutBtn" title="Esci">⏻</button>
@@ -203,7 +205,9 @@
         <label>Costo stimato (€) <input name="cost" type="number" min="0" step="1" placeholder="—"></label>
       </div>
       <div class="two">
-        <label>Di chi è <input name="owners" type="text" placeholder="es. Andrea, Stefania"></label>
+        <div class="flabel">Di chi è
+          <div class="owner-picker" id="ownerPicker"></div>
+        </div>
         <label>Priorità
           <select name="priority">
             <option value="alta">Alta</option>

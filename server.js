@@ -166,6 +166,21 @@ app.patch('/api/tasks/:id', requireUser, requireApproved, async (req, res) => {
   res.json(updated[0]);
 });
 
+// Riclassifica tutte le attività da fare (titolo, tag, costo, scadenza; assegnatari intatti)
+app.post('/api/tasks/reclassify-all', requireUser, requireApproved, async (req, res) => {
+  const rows = await query(`SELECT * FROM tasks WHERE status = 'open'`);
+  let updated = 0;
+  for (const task of rows) {
+    const c = await classify(task.original_text || task.title);
+    await query(
+      'UPDATE tasks SET title = $1, store = $2, room = $3, category = $4, priority = $5, ai_source = $6, cost = $7, due_date = $8 WHERE id = $9',
+      [c.title, c.store, c.room, c.category, c.priority, c.ai_source, c.cost ?? task.cost, c.due ?? task.due_date, task.id]
+    );
+    updated++;
+  }
+  res.json({ updated });
+});
+
 app.post('/api/tasks/:id/reclassify', requireUser, requireApproved, async (req, res) => {
   const rows = await query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: 'Attività non trovata' });
