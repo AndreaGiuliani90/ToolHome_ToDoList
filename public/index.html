@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131a">
+  <title>Casa Tasks</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+  <section id="view-loading" class="centered view">
+    <div class="logo">🏠</div>
+    <p class="muted">Carico…</p>
+  </section>
+
+  <section id="view-login" class="centered view" hidden>
+    <div class="logo">🏠</div>
+    <h1>Casa Tasks</h1>
+    <p class="muted">La lista dei lavori e lavoretti di casa.</p>
+    <div id="googleButton"></div>
+    <button id="devLoginBtn" class="btn" hidden>Accesso di sviluppo</button>
+    <p id="loginError" class="error" hidden></p>
+  </section>
+
+  <section id="view-pending" class="centered view" hidden>
+    <div class="logo">⏳</div>
+    <h1>Quasi fatto</h1>
+    <p class="muted">Il tuo account è in attesa di approvazione da parte di un amministratore.</p>
+    <button id="pendingLogoutBtn" class="btn">Esci</button>
+  </section>
+
+  <main id="view-app" class="view" hidden>
+    <header class="topbar">
+      <div class="brand">🏠 <span>Casa Tasks</span></div>
+      <div class="topbar-actions">
+        <button id="tvToggleBtn" class="icon-btn" title="Modalità TV">📺</button>
+        <button id="adminBtn" class="icon-btn" title="Gestione utenti" hidden>👥</button>
+        <button id="logoutBtn" class="icon-btn" title="Esci">⏻</button>
+      </div>
+    </header>
+
+    <form id="addForm" class="add-form" autocomplete="off">
+      <input id="addInput" type="text" placeholder="Scrivi un lavoretto… es. «comprare lampadine da IKEA per il corridoio»" enterkeyhint="done">
+      <button type="submit" class="btn btn-primary" id="addBtn">Aggiungi</button>
+    </form>
+
+    <div class="filters">
+      <input id="searchInput" type="search" placeholder="🔎 Cerca…" class="search">
+      <div class="chip-row" id="statusChips"></div>
+      <div class="chip-row" id="storeChips"></div>
+      <div class="chip-row" id="roomChips"></div>
+      <div class="chip-row" id="categoryChips"></div>
+    </div>
+
+    <p id="filterSummary" class="muted summary" hidden></p>
+    <ul id="taskList" class="task-list"></ul>
+    <div id="emptyState" class="centered empty" hidden>
+      <p>🎉 Niente da fare qui.</p>
+      <p class="muted">Aggiungi un'attività oppure cambia i filtri.</p>
+    </div>
+  </main>
+
+  <main id="view-admin" class="view" hidden>
+    <header class="topbar">
+      <button id="adminBackBtn" class="icon-btn" title="Torna alla lista">←</button>
+      <div class="brand">👥 <span>Utenti</span></div>
+      <div class="topbar-actions"></div>
+    </header>
+    <p class="muted pad">Chi fa login con Google compare qui: approvalo per dargli accesso alla lista.</p>
+    <ul id="userList" class="task-list"></ul>
+  </main>
+
+  <dialog id="editDialog">
+    <form id="editForm" method="dialog">
+      <h2>Modifica attività</h2>
+      <label>Titolo <input name="title" type="text" required></label>
+      <label>Negozio <input name="store" type="text" list="storeOptions" placeholder="es. IKEA (vuoto = nessuno)"></label>
+      <label>Stanza <input name="room" type="text" list="roomOptions" placeholder="es. Cucina"></label>
+      <label>Categoria <input name="category" type="text" list="categoryOptions" placeholder="es. Acquisto"></label>
+      <label>Priorità
+        <select name="priority">
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="bassa">Bassa</option>
+        </select>
+      </label>
+      <label>Note <textarea name="notes" rows="2" placeholder="Dettagli, misure, link…"></textarea></label>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-danger" id="deleteTaskBtn">Elimina</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="cancelEditBtn">Annulla</button>
+        <button type="submit" class="btn btn-primary">Salva</button>
+      </div>
+    </form>
+    <datalist id="storeOptions"></datalist>
+    <datalist id="roomOptions"></datalist>
+    <datalist id="categoryOptions"></datalist>
+  </dialog>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

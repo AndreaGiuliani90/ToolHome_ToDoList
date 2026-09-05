@@ -1,0 +1,274 @@
+/* ---------- Tema ---------- */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #eceef2;
+  --text: #191d24;
+  --muted: #6a7180;
+  --border: #dcdfe5;
+  --primary: #2f6fed;
+  --primary-contrast: #ffffff;
+  --danger: #d64545;
+  --ok: #2e9e5b;
+  --chip-store: #2f6fed;
+  --chip-room: #2e9e5b;
+  --chip-category: #8a5cd6;
+  --chip-priority: #d68a2e;
+  --shadow: 0 1px 3px rgba(15, 20, 30, 0.08);
+  --radius: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #10131a;
+    --surface: #1a1f29;
+    --surface-2: #232a37;
+    --text: #e8ebf0;
+    --muted: #97a0af;
+    --border: #2e3644;
+    --primary: #5b8cff;
+    --primary-contrast: #0d1117;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html { font-size: 16px; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.view { max-width: 760px; margin: 0 auto; padding: 0 16px 40px; }
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  min-height: 70vh;
+}
+
+.logo { font-size: 64px; }
+h1 { margin: 0; font-size: 1.6rem; }
+.muted { color: var(--muted); }
+.error { color: var(--danger); }
+.pad { padding: 0 4px; }
+.summary { margin: 4px 4px 0; font-size: 0.9rem; }
+
+/* ---------- Barra superiore ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 0 10px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+.brand { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.topbar-actions { display: flex; gap: 6px; }
+
+.icon-btn {
+  font-size: 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  color: var(--text);
+}
+.icon-btn:hover { background: var(--surface-2); }
+
+/* ---------- Pulsanti ---------- */
+.btn {
+  font-size: 1rem;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface-2); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-contrast); font-weight: 600; }
+.btn-primary:hover { filter: brightness(1.08); background: var(--primary); }
+.btn-danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+.btn[disabled] { opacity: 0.6; cursor: wait; }
+
+/* ---------- Inserimento ---------- */
+.add-form { display: flex; gap: 8px; margin: 6px 0 14px; }
+.add-form input {
+  flex: 1;
+  font-size: 1rem;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.add-form input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+
+/* ---------- Filtri ---------- */
+.filters { display: flex; flex-direction: column; gap: 8px; }
+.search {
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+.chip-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.chip-row:empty { display: none; }
+.chip-row::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip .count { color: var(--muted); font-size: 0.78rem; }
+.chip.active { background: var(--primary); border-color: var(--primary); color: var(--primary-contrast); }
+.chip.active .count { color: inherit; opacity: 0.8; }
+
+/* ---------- Lista attività ---------- */
+.task-list { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-direction: column; gap: 10px; }
+
+.task {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+.task.done { opacity: 0.55; }
+.task.done .task-title { text-decoration: line-through; }
+.task.pending-ai { opacity: 0.75; }
+
+.task-check {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--primary-contrast);
+}
+.task-check.checked { background: var(--ok); border-color: var(--ok); }
+
+.task-body { flex: 1; min-width: 0; cursor: pointer; }
+.task-title { font-weight: 600; overflow-wrap: anywhere; }
+.task-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+
+.tag {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  border: none;
+}
+.tag-store { background: var(--chip-store); }
+.tag-room { background: var(--chip-room); }
+.tag-category { background: var(--chip-category); }
+.tag-priority { background: var(--chip-priority); }
+.tag-priority.bassa { opacity: 0.65; }
+.tag-priority.alta { background: var(--danger); }
+
+.task-notes { font-size: 0.85rem; color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
+.task-meta { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+.empty { min-height: 30vh; }
+
+/* ---------- Utenti (admin) ---------- */
+.user-row { display: flex; align-items: center; gap: 12px; }
+.user-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-2); object-fit: cover; flex: 0 0 auto; }
+.user-info { flex: 1; min-width: 0; }
+.user-info .email { color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+.badge { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.badge.ok { background: var(--ok); color: #fff; }
+
+/* ---------- Dialog ---------- */
+dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  width: min(480px, calc(100vw - 32px));
+  padding: 20px;
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+dialog h2 { margin: 0 0 14px; font-size: 1.2rem; }
+dialog label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+dialog input, dialog select, dialog textarea {
+  font-size: 1rem;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+}
+.dialog-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.spacer { flex: 1; }
+
+/* ---------- Desktop ---------- */
+@media (min-width: 900px) {
+  .view { max-width: 860px; }
+  html { font-size: 17px; }
+}
+
+/* ---------- Modalità TV (Firestick / schermi grandi) ---------- */
+body.tv { font-size: 1.35rem; }
+body.tv .view { max-width: 1200px; }
+body.tv .brand { font-size: 1.8rem; }
+body.tv .icon-btn { width: 60px; height: 60px; font-size: 1.5rem; }
+body.tv .btn, body.tv .add-form input, body.tv .search { font-size: 1.3rem; padding: 14px 20px; }
+body.tv .chip { font-size: 1.15rem; padding: 10px 18px; }
+body.tv .task { padding: 18px 20px; }
+body.tv .task-title { font-size: 1.35rem; }
+body.tv .tag { font-size: 1rem; padding: 5px 14px; }
+body.tv .task-check { width: 38px; height: 38px; }
+body.tv .task-meta, body.tv .task-notes { font-size: 1rem; }
+
+/* Focus ben visibile per navigazione con telecomando/tastiera */
+body.tv :focus, body.tv .task-body:focus {
+  outline: 4px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+:focus-visible { outline: 2px solid var(--primary); }
