@@ -77,7 +77,7 @@
     <form id="editForm" method="dialog">
       <h2>Modifica attività</h2>
       <label>Titolo <input name="title" type="text" required></label>
-      <label>Negozio <input name="store" type="text" list="storeOptions" placeholder="es. IKEA (vuoto = nessuno)"></label>
+      <label>Negozi <input name="store" type="text" list="storeOptions" placeholder="es. IKEA, Leroy Merlin (separa con virgola)"></label>
       <label>Stanza <input name="room" type="text" list="roomOptions" placeholder="es. Cucina"></label>
       <label>Categoria <input name="category" type="text" list="categoryOptions" placeholder="es. Acquisto"></label>
       <label>Priorità
@@ -90,6 +90,7 @@
       <label>Note <textarea name="notes" rows="2" placeholder="Dettagli, misure, link…"></textarea></label>
       <div class="dialog-actions">
         <button type="button" class="btn btn-danger" id="deleteTaskBtn">Elimina</button>
+        <button type="button" class="btn" id="reclassifyBtn" title="Rianalizza il testo originale e riassegna i tag">✨ Riclassifica</button>
         <span class="spacer"></span>
         <button type="button" class="btn" id="cancelEditBtn">Annulla</button>
         <button type="submit" class="btn btn-primary">Salva</button>

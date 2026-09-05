@@ -10,6 +10,9 @@ const PRIORITY_ORDER = { alta: 0, media: 1, bassa: 2 };
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// Il campo store può contenere più negozi separati da virgola ("IKEA, Leroy Merlin")
+const storesOf = (t) => (t.store || '').split(',').map((s) => s.trim()).filter(Boolean);
+
 async function api(path, opts = {}) {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
@@ -107,8 +110,12 @@ function taskMatches(t, skipDimension = null) {
     if (!hay.includes(filters.q.toLowerCase())) return false;
   }
   for (const dim of ['store', 'room', 'category']) {
-    if (dim === skipDimension) continue;
-    if (filters[dim] && t[dim] !== filters[dim]) return false;
+    if (dim === skipDimension || !filters[dim]) continue;
+    if (dim === 'store') {
+      if (!storesOf(t).includes(filters.store)) return false;
+    } else if (t[dim] !== filters[dim]) {
+      return false;
+    }
   }
   return true;
 }
@@ -116,9 +123,10 @@ function taskMatches(t, skipDimension = null) {
 function facetCounts(dimension) {
   const counts = new Map();
   for (const t of tasks) {
-    if (!t[dimension] || t.pending) continue;
+    if (t.pending) continue;
     if (!taskMatches(t, dimension)) continue;
-    counts.set(t[dimension], (counts.get(t[dimension]) || 0) + 1);
+    const values = dimension === 'store' ? storesOf(t) : t[dimension] ? [t[dimension]] : [];
+    for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1]);
 }
@@ -237,7 +245,7 @@ function taskElement(t) {
     wait.textContent = '✨ classifico…';
     tags.appendChild(wait);
   } else {
-    if (t.store) tags.appendChild(tagButton('tag-store', 'store', t.store, `🛒 ${t.store}`));
+    for (const s of storesOf(t)) tags.appendChild(tagButton('tag-store', 'store', s, `🛒 ${s}`));
     if (t.room) tags.appendChild(tagButton('tag-room', 'room', t.room, `🚪 ${t.room}`));
     if (t.category) tags.appendChild(tagButton('tag-category', 'category', t.category, t.category));
     if (t.priority && t.priority !== 'media') {
@@ -341,7 +349,7 @@ function openEdit(t) {
   editForm.category.value = t.category || '';
   editForm.priority.value = t.priority || 'media';
   editForm.notes.value = t.notes || '';
-  fillDatalist('storeOptions', tasks.map((x) => x.store).filter(Boolean), ['IKEA', 'Leroy Merlin', 'Brico', 'OBI', 'Amazon', 'Supermercato', 'Ferramenta']);
+  fillDatalist('storeOptions', tasks.flatMap(storesOf), ['IKEA', 'Leroy Merlin', 'Brico', 'OBI', 'Amazon', 'Supermercato', 'Ferramenta']);
   fillDatalist('roomOptions', tasks.map((x) => x.room).filter(Boolean), ['Cucina', 'Bagno', 'Camera', 'Soggiorno', 'Corridoio', 'Balcone', 'Garage', 'Studio', 'Tutta casa']);
   fillDatalist('categoryOptions', tasks.map((x) => x.category).filter(Boolean), ['Acquisto', 'Montaggio', 'Riparazione', 'Pulizia', 'Elettricità', 'Idraulica', 'Decorazione', 'Burocrazia', 'Trasloco', 'Altro']);
   dialog.showModal();
@@ -368,6 +376,24 @@ editForm.addEventListener('submit', async () => {
 });
 
 $('cancelEditBtn').addEventListener('click', () => dialog.close());
+
+$('reclassifyBtn').addEventListener('click', async () => {
+  if (!editingTask) return;
+  const btn = $('reclassifyBtn');
+  btn.disabled = true;
+  btn.textContent = '✨ Analizzo…';
+  try {
+    const updated = await api(`/api/tasks/${editingTask.id}/reclassify`, { method: 'POST' });
+    Object.assign(editingTask, updated);
+    dialog.close();
+    editingTask = null;
+    render();
+  } catch (err) {
+    alert(`Errore: ${err.message}`);
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ Riclassifica';
+});
 
 $('deleteTaskBtn').addEventListener('click', async () => {
   if (!editingTask) return;
