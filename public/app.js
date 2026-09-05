@@ -1052,7 +1052,7 @@ function openEdit(t) {
   editForm.notes.value = t.notes || '';
   fillDatalist('storeOptions', tasks.flatMap(storesOf), ['IKEA', 'Leroy Merlin', 'Brico', 'OBI', 'Amazon', 'Supermercato', 'Ferramenta']);
   fillDatalist('roomOptions', tasks.map((x) => x.room).filter(Boolean), ['Cucina', 'Bagno', 'Camera', 'Soggiorno', 'Corridoio', 'Balcone', 'Garage', 'Studio', 'Tutta casa']);
-  fillDatalist('categoryOptions', tasks.map((x) => x.category).filter(Boolean), ['Acquisto', 'Montaggio', 'Riparazione', 'Pulizia', 'Elettricità', 'Idraulica', 'Decorazione', 'Burocrazia', 'Trasloco', 'Altro']);
+  fillDatalist('categoryOptions', tasks.map((x) => x.category).filter(Boolean), ['Acquisto', 'Montaggio', 'Riparazione', 'Pulizia', 'Elettricità', 'Idraulica', 'Decorazione', 'Burocrazia', 'Chiamare', 'Trasloco', 'Altro']);
   editDialog.showModal();
 }
 

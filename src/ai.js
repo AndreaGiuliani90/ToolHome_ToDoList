@@ -14,16 +14,25 @@ try {
 
 export const AI_ENABLED = Boolean(client);
 
+const CONTACTS_NOTE = `Regola per il titolo — se l'attività ha un INTERLOCUTORE (fornitore, ente, assicurazione, persona da contattare), il titolo è "INTERLOCUTORE - Azione essenziale", con il nome in MAIUSCOLO e l'azione ridotta all'osso, all'infinito:
+- "TARI - Comunicare nuova residenza"
+- "ZURICH - Comunicare nuova residenza"
+- "FRATONI - Chiedere quando Ponziani viene a fare le rifiniture"
+Se non c'è un interlocutore (acquisti, lavoretti da fare da soli), usa solo l'azione, breve e pulita.
+Fornitori di fiducia della famiglia: FRATONI (impresa, lavori e rifiniture), PONZIANI, CHIARA, TURBOPAOLO. Attenzione: Ponziani si contatta tramite Fratoni, quindi le richieste che riguardano Ponziani hanno come interlocutore FRATONI (Ponziani si cita nell'azione). Enti/utenze tipiche: TARI, ZURICH, ENEL, ecc.`;
+
 const SYSTEM_PROMPT = `Sei l'assistente di una lista di lavori e lavoretti di casa (trasloco appena fatto, Italia).
 Ricevi il testo di una nuova attività scritta in linguaggio naturale e la classifichi.
 
 Il testo può contenere refusi: interpretalo comunque ("comrare tende" = "comprare tende").
 
+${CONTACTS_NOTE}
+
 Rispondi SOLO con un oggetto JSON valido, senza markdown né testo extra, con questi campi:
-- "title": il titolo dell'attività, breve e pulito (riformula il testo correggendo i refusi, massimo ~60 caratteri, prima lettera maiuscola)
+- "title": il titolo dell'attività secondo la regola sopra (massimo ~60 caratteri, prima lettera maiuscola)
 - "stores": array dei negozi dove si può risolvere l'attività, se implica un acquisto (da 1 a 3, in ordine di plausibilità). Includi sempre il negozio citato nel testo, se presente; altrimenti deduci i più plausibili per quel prodotto tra: "IKEA", "Leroy Merlin", "Brico", "OBI", "Amazon", "Supermercato", "Ferramenta", "Farmacia", "Mediaworld" (esempio: tende → ["IKEA","Leroy Merlin"]). Se non serve comprare nulla: []
 - "room": la stanza interessata, una tra: "Cucina", "Bagno", "Camera", "Soggiorno", "Corridoio", "Balcone", "Garage", "Studio", "Tutta casa". Se non deducibile: null
-- "category": una tra: "Acquisto", "Montaggio", "Riparazione", "Pulizia", "Elettricità", "Idraulica", "Decorazione", "Burocrazia", "Trasloco", "Altro"
+- "category": una tra: "Acquisto", "Montaggio", "Riparazione", "Pulizia", "Elettricità", "Idraulica", "Decorazione", "Burocrazia", "Chiamare", "Trasloco", "Altro"
 - "priority": "alta", "media" o "bassa" (deducila dal tono e dall'urgenza pratica; in dubbio "media")
 - "cost": stima realistica del costo in euro (numero intero) se l'attività comporta una spesa; altrimenti null
 - "due": SOLO se il testo indica un termine temporale ("entro venerdì", "domani", "prima del 20"): la data corrispondente in formato "YYYY-MM-DD"; altrimenti null
@@ -59,7 +68,43 @@ const ROOM_KEYWORDS = {
   studio: 'Studio',
 };
 
+// Interlocutori noti per il formato "INTERLOCUTORE - Azione" (Ponziani si contatta tramite Fratoni)
+const KNOWN_CONTACTS = [
+  { re: /\bfratoni\b/i, name: 'FRATONI', strip: /\b(?:a|al|con|da|di)?\s*fratoni\b/i },
+  { re: /\bponziani\b/i, name: 'FRATONI', strip: null },
+  { re: /\bchiara\b/i, name: 'CHIARA', strip: /\b(?:a|con|da|di)?\s*chiara\b/i },
+  { re: /\bturbo\s?paolo\b/i, name: 'TURBOPAOLO', strip: /\b(?:a|con|da|di)?\s*turbo\s?paolo\b/i },
+  { re: /\btari\b/i, name: 'TARI', strip: /\b(?:alla|della|per la|la)?\s*tari\b/i },
+  { re: /\bzurich\b/i, name: 'ZURICH', strip: /\b(?:alla|a|della|con)?\s*zurich\b/i },
+  { re: /\benel\b/i, name: 'ENEL', strip: /\b(?:all'|a|dell'|con)?\s*enel\b/i },
+];
+
+const PROPER_NAMES = { fratoni: 'Fratoni', ponziani: 'Ponziani', chiara: 'Chiara', turbopaolo: 'Turbopaolo' };
+
+function contactTitle(raw) {
+  const contact = KNOWN_CONTACTS.find((c) => c.re.test(raw));
+  if (!contact) return null;
+  let action = raw
+    .replace(/^(chiamare|telefonare a|sentire|contattare|scrivere a|chiedere a|comunicare a(?:lla)?)\s+/i, '')
+    .replace(contact.strip || /$^/, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s,.:;–-]+|[\s,.:;–-]+$/g, '')
+    .replace(/^(?:a|al|alla|allo|ai|agli|da|dal|dalla|con|per|il|la|lo)\s+/i, '');
+  if (action.length < 3) action = raw.trim();
+  for (const [lower, proper] of Object.entries(PROPER_NAMES)) {
+    action = action.replace(new RegExp(`\\b${lower}\\b`, 'gi'), proper);
+  }
+  return `${contact.name} - ${action.charAt(0).toUpperCase()}${action.slice(1)}`;
+}
+
 const CATEGORY_KEYWORDS = {
+  chiama: 'Chiamare',
+  telefona: 'Chiamare',
+  sentire: 'Chiamare',
+  chiedere: 'Chiamare',
+  contatta: 'Chiamare',
+  comunicare: 'Burocrazia',
+  disdire: 'Burocrazia',
   compra: 'Acquisto',
   acquist: 'Acquisto',
   prendere: 'Acquisto',
@@ -143,9 +188,10 @@ function heuristicClassify(text) {
     }
   }
   const category = pick(CATEGORY_KEYWORDS) || (stores.length ? 'Acquisto' : 'Altro');
-  const title = text.trim().replace(/\s+/g, ' ');
+  const plain = text.trim().replace(/\s+/g, ' ');
+  const title = contactTitle(plain) || plain.charAt(0).toUpperCase() + plain.slice(1);
   return {
-    title: title.charAt(0).toUpperCase() + title.slice(1),
+    title,
     store: stores.slice(0, 3).join(', ') || null,
     room: pick(ROOM_KEYWORDS),
     category,
@@ -180,12 +226,14 @@ const LIST_PROMPT = `Sei l'assistente di una lista di lavori e lavoretti di casa
 Ricevi un elenco di attività — testo libero, appunti, o la trascrizione di una lista scritta a mano — e lo trasformi in attività strutturate.
 Il testo può contenere refusi o abbreviazioni: interpretali. Ignora righe che non sono attività (titoli, date, scarabocchi).
 
+${CONTACTS_NOTE}
+
 Rispondi SOLO con un array JSON valido, senza markdown né testo extra. Ogni elemento ha i campi:
 "title", "stores" (array, anche vuoto), "room", "category", "priority", "cost", "due" — con le stesse regole seguenti:
-- "title": breve e pulito, massimo ~60 caratteri, prima lettera maiuscola
+- "title": secondo la regola sopra, massimo ~60 caratteri, prima lettera maiuscola
 - "stores": da 0 a 3 negozi dove si può risolvere, tra: "IKEA", "Leroy Merlin", "Brico", "OBI", "Amazon", "Supermercato", "Ferramenta", "Farmacia", "Mediaworld" (o il negozio citato nel testo)
 - "room": una tra "Cucina", "Bagno", "Camera", "Soggiorno", "Corridoio", "Balcone", "Garage", "Studio", "Tutta casa", oppure null
-- "category": una tra "Acquisto", "Montaggio", "Riparazione", "Pulizia", "Elettricità", "Idraulica", "Decorazione", "Burocrazia", "Trasloco", "Altro"
+- "category": una tra "Acquisto", "Montaggio", "Riparazione", "Pulizia", "Elettricità", "Idraulica", "Decorazione", "Burocrazia", "Chiamare", "Trasloco", "Altro"
 - "priority": "alta" | "media" | "bassa"
 - "cost": stima in euro (numero intero) se comporta una spesa, altrimenti null
 - "due": "YYYY-MM-DD" solo se indicato un termine, altrimenti null
