@@ -14,11 +14,17 @@ try {
 
 export const AI_ENABLED = Boolean(client);
 
-const CONTACTS_NOTE = `Regola per il titolo — se l'attività ha un INTERLOCUTORE (fornitore, ente, assicurazione, persona da contattare), il titolo è "INTERLOCUTORE - Azione essenziale", con il nome in MAIUSCOLO e l'azione ridotta all'osso, all'infinito:
+const CONTACTS_NOTE = `Regola per il titolo — formato "SOGGETTO - Azione essenziale". Il SOGGETTO (in MAIUSCOLO) è:
+1. l'interlocutore, se c'è: fornitore, ente, assicurazione, persona da contattare;
+2. altrimenti l'oggetto principale dell'attività (mobile, stanza, cosa).
+L'azione è ridotta all'osso, all'infinito, senza convenevoli. Esempi:
 - "TARI - Comunicare nuova residenza"
 - "ZURICH - Comunicare nuova residenza"
 - "FRATONI - Chiedere quando Ponziani viene a fare le rifiniture"
-Se non c'è un interlocutore (acquisti, lavoretti da fare da soli), usa solo l'azione, breve e pulita.
+- "MOBILE TV - Sistemare sportelli"
+- "SCATOLE - Portare in mansarda"
+- "TENDE - Comprare oscuranti per la camera"
+Solo se non emerge nessun soggetto sensato, usa la sola azione breve e pulita.
 Fornitori di fiducia della famiglia: FRATONI (impresa, lavori e rifiniture), PONZIANI, CHIARA, TURBOPAOLO. Attenzione: Ponziani si contatta tramite Fratoni, quindi le richieste che riguardano Ponziani hanno come interlocutore FRATONI (Ponziani si cita nell'azione). Enti/utenze tipiche: TARI, ZURICH, ENEL, ecc.`;
 
 const SYSTEM_PROMPT = `Sei l'assistente di una lista di lavori e lavoretti di casa (trasloco appena fatto, Italia).

@@ -8,6 +8,7 @@ let tasks = [];
 
 const ui = {
   tab: 'lista',            // mobile: lista | negozi | stanze | fatte
+  sort: 'default',         // default (scadenza) | num | title | room | owner
   q: '',
   homeFilter: 'Tutte',     // mobile lista: Tutte | Urgenti | <negozio>
   shopStore: null,         // modalità spesa
@@ -582,16 +583,35 @@ function renderSidebar() {
   mkChips('sideTypes', facetValues('type'), 'type');
 }
 
+const SORTERS = {
+  num: (a, b) => (a.num || 1e9) - (b.num || 1e9),
+  title: (a, b) => a.title.localeCompare(b.title, 'it'),
+  room: (a, b) => (a.room || '~').localeCompare(b.room || '~', 'it') || a.title.localeCompare(b.title, 'it'),
+  owner: (a, b) => (ownersOf(a)[0] || '~').localeCompare(ownersOf(b)[0] || '~', 'it') || a.title.localeCompare(b.title, 'it'),
+};
+const SORT_LABELS = { num: 'Per numero', title: 'Per nome', room: 'Per stanza', owner: 'Per assegnatario' };
+
 function renderList() {
   const area = $('listArea');
   const desktop = isDesktop.matches;
   const shopMode = !desktop && ui.tab === 'negozi';
   $('shopHead').hidden = !shopMode;
+  const mainList = desktop || ui.tab === 'lista';
+  $('sortBar').hidden = !mainList;
+  $('sortSelect').value = ui.sort;
 
   if (shopMode) return renderShop(area);
 
   const pool = currentPool();
   const groups = [];
+
+  if (mainList && ui.sort !== 'default') {
+    const sorted = [...pool].sort(SORTERS[ui.sort]);
+    if (sorted.length) groups.push(groupEl(`${SORT_LABELS[ui.sort]} · ${sorted.length}`, sorted));
+    area.replaceChildren(...groups);
+    $('emptyState').hidden = groups.length > 0;
+    return;
+  }
 
   if (!desktop && ui.tab === 'stanze') {
     const rooms = new Map();
@@ -985,6 +1005,11 @@ addForm.addEventListener('submit', async (e) => {
 });
 
 // ---------- Ricerca ----------
+
+$('sortSelect').addEventListener('change', (e) => {
+  ui.sort = e.target.value;
+  renderAll();
+});
 
 for (const id of ['searchMobile', 'searchDesktop']) {
   $(id).addEventListener('input', (e) => {

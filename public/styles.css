@@ -121,6 +121,14 @@ h1 { margin: 0; font: 600 30px/1.15 var(--font-display); letter-spacing: -0.02em
 
 /* ---------- Liste e gruppi ---------- */
 .content { max-width: 640px; margin: 0 auto; padding: 4px 20px 190px; }
+.sortbar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding-top: 10px; }
+.sortbar-label { font: 500 12px/1 var(--font-body); color: var(--muted); }
+.sortbar select {
+  font: 600 12.5px/1 var(--font-body); color: var(--muted-2);
+  padding: 8px 12px; border-radius: 999px; border: none;
+  background: var(--card); box-shadow: var(--shadow-float); cursor: pointer;
+}
+
 .group { padding-top: 14px; }
 .group-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; }
 .group-dot { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, #ff7a4d, #e0402c); }
