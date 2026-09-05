@@ -25,9 +25,11 @@ Rispondi SOLO con un oggetto JSON valido, senza markdown né testo extra, con qu
 - "room": la stanza interessata, una tra: "Cucina", "Bagno", "Camera", "Soggiorno", "Corridoio", "Balcone", "Garage", "Studio", "Tutta casa". Se non deducibile: null
 - "category": una tra: "Acquisto", "Montaggio", "Riparazione", "Pulizia", "Elettricità", "Idraulica", "Decorazione", "Burocrazia", "Trasloco", "Altro"
 - "priority": "alta", "media" o "bassa" (deducila dal tono e dall'urgenza pratica; in dubbio "media")
+- "cost": stima realistica del costo in euro (numero intero) se l'attività comporta una spesa; altrimenti null
+- "due": SOLO se il testo indica un termine temporale ("entro venerdì", "domani", "prima del 20"): la data corrispondente in formato "YYYY-MM-DD"; altrimenti null
 
 Esempio input: "comprare le lampadine E27 per il corridoio quando passo da ikea"
-Esempio output: {"title":"Comprare lampadine E27 per il corridoio","stores":["IKEA","Leroy Merlin"],"room":"Corridoio","category":"Acquisto","priority":"media"}`;
+Esempio output: {"title":"Comprare lampadine E27 per il corridoio","stores":["IKEA","Leroy Merlin"],"room":"Corridoio","category":"Acquisto","priority":"media","cost":15,"due":null}`;
 
 const STORE_KEYWORDS = {
   ikea: 'IKEA',
@@ -148,6 +150,8 @@ function heuristicClassify(text) {
     room: pick(ROOM_KEYWORDS),
     category,
     priority: /urgent|subito|importante|priorit/i.test(text) ? 'alta' : 'media',
+    cost: null,
+    due: null,
     ai_source: 'euristica',
   };
 }
@@ -158,12 +162,16 @@ function sanitize(result, fallbackTitle) {
   // Accetta sia il nuovo formato "stores" (array) sia un eventuale "store" singolo
   const rawStores = Array.isArray(result.stores) ? result.stores : [result.store];
   const stores = [...new Set(rawStores.map(str).filter(Boolean))].slice(0, 3);
+  const cost = Number.isFinite(Number(result.cost)) && Number(result.cost) > 0 ? Math.round(Number(result.cost)) : null;
+  const due = typeof result.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(result.due) ? result.due : null;
   return {
     title: str(result.title) || fallbackTitle,
     store: stores.join(', ') || null,
     room: str(result.room),
     category: str(result.category) || 'Altro',
     priority,
+    cost,
+    due,
     ai_source: 'ai',
   };
 }
@@ -176,7 +184,7 @@ export async function classify(text) {
       model: MODEL,
       max_tokens: 1024,
       output_config: { effort: 'low' },
-      system: SYSTEM_PROMPT,
+      system: `${SYSTEM_PROMPT}\n\nOggi è ${new Date().toISOString().slice(0, 10)}.`,
       messages: [{ role: 'user', content: text }],
     });
     const textBlock = response.content.find((b) => b.type === 'text');

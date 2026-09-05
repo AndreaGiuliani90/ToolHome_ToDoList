@@ -71,7 +71,7 @@ app.post('/api/auth/logout', (req, res) => {
 
 // ---------- Attività (lista condivisa tra gli utenti approvati) ----------
 
-const TASK_FIELDS = ['title', 'store', 'room', 'category', 'priority', 'notes', 'status'];
+const TASK_FIELDS = ['title', 'store', 'room', 'category', 'priority', 'notes', 'status', 'due_date', 'cost', 'owners', 'parked'];
 
 app.get('/api/tasks', requireUser, requireApproved, async (req, res) => {
   const tasks = await query('SELECT * FROM tasks ORDER BY created_at DESC');
@@ -83,10 +83,11 @@ app.post('/api/tasks', requireUser, requireApproved, async (req, res) => {
   if (!text) return res.status(400).json({ error: 'Testo mancante' });
   const c = await classify(text);
   const id = newId();
+  const ownerName = req.user.name || req.user.email.split('@')[0];
   await query(
-    `INSERT INTO tasks (id, title, original_text, store, room, category, priority, status, ai_source, created_by, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-    [id, c.title, text, c.store, c.room, c.category, c.priority, 'open', c.ai_source, req.user.id, now()]
+    `INSERT INTO tasks (id, title, original_text, store, room, category, priority, status, ai_source, created_by, created_at, due_date, cost, owners, parked)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    [id, c.title, text, c.store, c.room, c.category, c.priority, 'open', c.ai_source, req.user.id, now(), c.due, c.cost, ownerName, 0]
   );
   const rows = await query('SELECT * FROM tasks WHERE id = $1', [id]);
   res.status(201).json(rows[0]);
@@ -107,6 +108,11 @@ app.patch('/api/tasks/:id', requireUser, requireApproved, async (req, res) => {
   if (updates.status && !['open', 'done'].includes(updates.status)) {
     return res.status(400).json({ error: 'Stato non valido' });
   }
+  if ('cost' in updates && updates.cost !== null) {
+    const n = Number(updates.cost);
+    updates.cost = Number.isFinite(n) && n > 0 ? n : null;
+  }
+  if ('parked' in updates) updates.parked = updates.parked ? 1 : 0;
   if (updates.status) {
     updates.done_at = updates.status === 'done' ? now() : null;
   }
@@ -128,8 +134,8 @@ app.post('/api/tasks/:id/reclassify', requireUser, requireApproved, async (req, 
   const task = rows[0];
   const c = await classify(task.original_text || task.title);
   await query(
-    'UPDATE tasks SET title = $1, store = $2, room = $3, category = $4, priority = $5, ai_source = $6 WHERE id = $7',
-    [c.title, c.store, c.room, c.category, c.priority, c.ai_source, task.id]
+    'UPDATE tasks SET title = $1, store = $2, room = $3, category = $4, priority = $5, ai_source = $6, cost = $7, due_date = $8 WHERE id = $9',
+    [c.title, c.store, c.room, c.category, c.priority, c.ai_source, c.cost ?? task.cost, c.due ?? task.due_date, task.id]
   );
   const updated = await query('SELECT * FROM tasks WHERE id = $1', [task.id]);
   res.json(updated[0]);

@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10131a">
+  <meta name="theme-color" content="#fff6ec">
   <title>Casa Tasks</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -33,60 +35,168 @@
   </section>
 
   <main id="view-app" class="view" hidden>
+
+    <!-- Barra superiore (desktop) -->
     <header class="topbar">
-      <div class="brand">🏠 <span>Casa Tasks</span></div>
-      <div class="topbar-actions">
-        <button id="tvToggleBtn" class="icon-btn" title="Modalità TV">📺</button>
-        <button id="adminBtn" class="icon-btn" title="Gestione utenti" hidden>👥</button>
-        <button id="logoutBtn" class="icon-btn" title="Esci">⏻</button>
+      <div class="brand-d">🏠 Casa Tasks</div>
+      <div class="searchbox">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a837a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4.2-4.2"></path></svg>
+        <input id="searchDesktop" type="search" placeholder="Cerca: «cosa serve per il bagno»">
       </div>
+      <div class="spacer"></div>
+      <div class="progress-pill"><span id="progressLabelD">0% fatte</span><div class="progress-ring" id="progressRing"><div class="inner" id="doneCountD">0</div></div></div>
+      <div class="mini-actions">
+        <button class="icon-btn" id="tvBtnD" title="Modalità TV">📺</button>
+        <button class="icon-btn adminBtn" title="Gestione utenti" hidden>👥</button>
+        <button class="icon-btn logoutBtn" title="Esci">⏻</button>
+      </div>
+      <button class="btn btn-primary" id="addBtnD">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        Nuova attività
+      </button>
     </header>
 
-    <form id="addForm" class="add-form" autocomplete="off">
-      <input id="addInput" type="text" placeholder="Scrivi un lavoretto… es. «comprare lampadine da IKEA per il corridoio»" enterkeyhint="done">
-      <button type="submit" class="btn btn-primary" id="addBtn">Aggiungi</button>
-    </form>
+    <!-- Header mobile -->
+    <header class="mheader">
+      <div class="mheader-top">
+        <div style="flex:1;min-width:0">
+          <div class="mdate" id="mDate"></div>
+          <div class="mtitle" id="mTitle"></div>
+        </div>
+        <div class="mheader-side">
+          <div class="mini-actions">
+            <button class="icon-btn" id="tvBtnM" title="Modalità TV">📺</button>
+            <button class="icon-btn adminBtn" title="Gestione utenti" hidden>👥</button>
+            <button class="icon-btn logoutBtn" title="Esci">⏻</button>
+          </div>
+          <div class="avatars" id="mAvatars"></div>
+        </div>
+      </div>
+      <div class="mprogress"><div class="bar"><div class="fill" id="mBarFill" style="width:0%"></div></div><span class="pct" id="mPct">0%</span></div>
+      <div class="searchbox">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a837a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4.2-4.2"></path></svg>
+        <input id="searchMobile" type="search" placeholder="Cerca o chiedi qualcosa…">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#12876f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg>
+      </div>
+      <div class="chip-row" id="mChips"></div>
+    </header>
 
-    <div class="filters">
-      <input id="searchInput" type="search" placeholder="🔎 Cerca…" class="search">
-      <div class="chip-row" id="statusChips"></div>
-      <div class="chip-row" id="storeChips"></div>
-      <div class="chip-row" id="roomChips"></div>
-      <div class="chip-row" id="categoryChips"></div>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="side-title">Viste</div>
+        <div class="views" id="viewsList"></div>
+        <div class="side-title">Negozio</div>
+        <div class="wrapchips" id="sideStores"></div>
+        <div class="side-title">Stanza</div>
+        <div class="wrapchips" id="sideRooms"></div>
+        <div class="side-title">Tipo</div>
+        <div class="wrapchips" id="sideTypes"></div>
+      </aside>
+
+      <div class="content">
+        <div id="shopHead" hidden>
+          <div class="chip-row" id="shopChips" style="margin-top:6px"></div>
+          <div class="shop-note" id="shopNote"></div>
+          <div class="shop-summary" id="shopSummary"></div>
+        </div>
+        <div id="listArea"></div>
+        <div id="emptyState" class="empty" hidden>Niente da fare con questi filtri.<br>Bella sensazione, no?</div>
+      </div>
+
+      <aside class="detail" id="detailPanel"></aside>
     </div>
 
-    <p id="filterSummary" class="muted summary" hidden></p>
-    <ul id="taskList" class="task-list"></ul>
-    <div id="emptyState" class="centered empty" hidden>
-      <p>🎉 Niente da fare qui.</p>
-      <p class="muted">Aggiungi un'attività oppure cambia i filtri.</p>
+    <!-- Barra inferiore mobile -->
+    <div class="bottombar">
+      <div class="bottombar-inner">
+        <div id="toastWrap"></div>
+        <div id="cartBar" class="cartbar" hidden></div>
+        <div class="fab-row"><button class="fab" id="fabAdd"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Aggiungi</button></div>
+        <nav class="bnav" id="bnav">
+          <button data-tab="lista"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"></path></svg><div>Lista</div></button>
+          <button data-tab="negozi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h16l-1.4 10.2a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg><div>Negozi</div></button>
+          <button data-tab="stanze"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path></svg><div>Stanze</div></button>
+          <button data-tab="fatte"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 17.5 20 6.5"></path></svg><div>Fatte</div></button>
+        </nav>
+      </div>
     </div>
   </main>
 
+  <!-- Dashboard TV -->
+  <main id="view-tv" hidden>
+    <div class="tv-head">
+      <div class="tv-brand">Casa Tasks</div>
+      <div class="tv-date" id="tvDate"></div>
+      <button class="tv-exit" id="tvExit">esci</button>
+    </div>
+    <div class="tv-grid">
+      <div style="min-width:0">
+        <div class="tv-sec warm">Prossime scadenze</div>
+        <div class="tv-due-list" id="tvDueList"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <div class="tv-sec">Da comprare</div>
+        <div class="tv-stores" id="tvStores"></div>
+        <div class="tv-stats">
+          <div class="tv-stat hl"><div class="big" id="tvHomeCount">0</div><div class="lbl">da fare in casa</div></div>
+          <div class="tv-stat"><div class="big" id="tvDoneCount">0</div><div class="lbl">fatte, bravi</div></div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="tv-alexa">«Alexa, cosa devo comprare da IKEA?»</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Admin -->
   <main id="view-admin" class="view" hidden>
-    <header class="topbar">
-      <button id="adminBackBtn" class="icon-btn" title="Torna alla lista">←</button>
-      <div class="brand">👥 <span>Utenti</span></div>
-      <div class="topbar-actions"></div>
-    </header>
-    <p class="muted pad">Chi fa login con Google compare qui: approvalo per dargli accesso alla lista.</p>
-    <ul id="userList" class="task-list"></ul>
+    <div class="admin-head">
+      <button class="icon-btn" id="adminBackBtn" title="Torna alla lista">←</button>
+      <div class="ttl">👥 Utenti</div>
+    </div>
+    <p class="muted">Chi accede compare qui: approvalo per dargli accesso alla lista.</p>
+    <ul id="userList" class="user-list"></ul>
   </main>
 
+  <!-- Nuova attività -->
+  <dialog id="addDialog">
+    <form id="addForm" method="dialog">
+      <h2>Nuova attività</h2>
+      <p class="add-hint">Scrivila come la diresti: penso io a negozio, stanza, tipo, costo e scadenza. ✨</p>
+      <label>Cosa c'è da fare?
+        <input name="text" type="text" autocomplete="off" placeholder="es. «tende oscuranti camera, misurare prima»" required>
+      </label>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="cancelAddBtn">Annulla</button>
+        <button type="submit" class="btn btn-primary">Aggiungi</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Modifica attività -->
   <dialog id="editDialog">
     <form id="editForm" method="dialog">
       <h2>Modifica attività</h2>
       <label>Titolo <input name="title" type="text" required></label>
       <label>Negozi <input name="store" type="text" list="storeOptions" placeholder="es. IKEA, Leroy Merlin (separa con virgola)"></label>
-      <label>Stanza <input name="room" type="text" list="roomOptions" placeholder="es. Cucina"></label>
-      <label>Categoria <input name="category" type="text" list="categoryOptions" placeholder="es. Acquisto"></label>
-      <label>Priorità
-        <select name="priority">
-          <option value="alta">Alta</option>
-          <option value="media">Media</option>
-          <option value="bassa">Bassa</option>
-        </select>
-      </label>
+      <div class="two">
+        <label>Stanza <input name="room" type="text" list="roomOptions" placeholder="es. Cucina"></label>
+        <label>Tipo <input name="category" type="text" list="categoryOptions" placeholder="es. Acquisto"></label>
+      </div>
+      <div class="two">
+        <label>Scadenza <input name="due_date" type="date"></label>
+        <label>Costo stimato (€) <input name="cost" type="number" min="0" step="1" placeholder="—"></label>
+      </div>
+      <div class="two">
+        <label>Di chi è <input name="owners" type="text" placeholder="es. Andrea, Stefania"></label>
+        <label>Priorità
+          <select name="priority">
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="bassa">Bassa</option>
+          </select>
+        </label>
+      </div>
       <label>Note <textarea name="notes" rows="2" placeholder="Dettagli, misure, link…"></textarea></label>
       <div class="dialog-actions">
         <button type="button" class="btn btn-danger" id="deleteTaskBtn">Elimina</button>

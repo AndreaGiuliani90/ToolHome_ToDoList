@@ -64,5 +64,17 @@ export async function init() {
     created_at TEXT NOT NULL,
     done_at TEXT
   )`);
+  // Migrazioni additive: ignora l'errore se la colonna esiste già
+  const addColumn = async (ddl) => {
+    try {
+      await query(ddl);
+    } catch {
+      /* colonna già presente */
+    }
+  };
+  await addColumn('ALTER TABLE tasks ADD COLUMN due_date TEXT');
+  await addColumn('ALTER TABLE tasks ADD COLUMN cost REAL');
+  await addColumn('ALTER TABLE tasks ADD COLUMN owners TEXT');
+  await addColumn('ALTER TABLE tasks ADD COLUMN parked INTEGER NOT NULL DEFAULT 0');
   console.log(`[db] pronto (${usePg ? 'Postgres' : 'SQLite locale'})`);
 }
