@@ -76,5 +76,16 @@ export async function init() {
   await addColumn('ALTER TABLE tasks ADD COLUMN cost REAL');
   await addColumn('ALTER TABLE tasks ADD COLUMN owners TEXT');
   await addColumn('ALTER TABLE tasks ADD COLUMN parked INTEGER NOT NULL DEFAULT 0');
+  await addColumn('ALTER TABLE tasks ADD COLUMN num INTEGER');
+  // Backfill: assegna il numero progressivo alle attività esistenti che non ce l'hanno
+  const missing = await query('SELECT id FROM tasks WHERE num IS NULL ORDER BY created_at ASC');
+  if (missing.length) {
+    const maxRows = await query('SELECT COALESCE(MAX(num), 0) AS max FROM tasks');
+    let next = Number(maxRows[0].max) + 1;
+    for (const row of missing) {
+      await query('UPDATE tasks SET num = $1 WHERE id = $2', [next++, row.id]);
+    }
+    console.log(`[db] assegnato il numero a ${missing.length} attività esistenti`);
+  }
   console.log(`[db] pronto (${usePg ? 'Postgres' : 'SQLite locale'})`);
 }

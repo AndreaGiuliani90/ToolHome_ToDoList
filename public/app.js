@@ -302,6 +302,7 @@ function tagEls(t) {
   if (t.room) out.push(el('span', 'tag', t.room));
   if (t.category && !storesOf(t).length) out.push(el('span', 'tag', t.category));
   if (t.cost) out.push(el('span', 'tag cost', `~${Math.round(t.cost)} €`));
+  if (t.num) out.push(el('span', 'tag num', `#${t.num}`));
   return out;
 }
 
@@ -344,10 +345,9 @@ function taskCard(t) {
       if (isDesktop.matches) {
         ui.selectedId = t.id;
         renderAll();
-      } else {
-        openEdit(t);
       }
     });
+    attachLongPress(card, () => openEdit(t));
   }
   return card;
 }
@@ -369,8 +369,48 @@ function groupEl(label, items, opts = {}) {
 
 function matchesSearch(t) {
   if (!ui.q) return true;
-  const hay = `${t.title} ${t.original_text || ''} ${t.notes || ''} ${t.store || ''} ${t.room || ''} ${t.category || ''} ${t.owners || ''}`.toLowerCase();
+  const hay = `#${t.num || ''} ${t.title} ${t.original_text || ''} ${t.notes || ''} ${t.store || ''} ${t.room || ''} ${t.category || ''} ${t.owners || ''}`.toLowerCase();
   return hay.includes(ui.q.toLowerCase());
+}
+
+// Pressione prolungata (dito o mouse) → callback; il click successivo viene assorbito
+function attachLongPress(target, fn) {
+  let timer = null;
+  let startX = 0;
+  let startY = 0;
+  let fired = false;
+  target.addEventListener('pointerdown', (e) => {
+    if (e.button) return;
+    fired = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    timer = setTimeout(() => {
+      timer = null;
+      fired = true;
+      navigator.vibrate?.(15);
+      fn();
+    }, 500);
+  });
+  const cancel = () => {
+    clearTimeout(timer);
+    timer = null;
+  };
+  target.addEventListener('pointermove', (e) => {
+    if (timer !== null && Math.hypot(e.clientX - startX, e.clientY - startY) > 10) cancel();
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) target.addEventListener(ev, cancel);
+  target.addEventListener(
+    'click',
+    (e) => {
+      if (fired) {
+        e.stopPropagation();
+        e.preventDefault();
+        fired = false;
+      }
+    },
+    true
+  );
+  target.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 function byDue(a, b) {
@@ -604,6 +644,7 @@ function shopCard(t) {
     else ui.cart.add(t.id);
     renderAll();
   });
+  attachLongPress(card, () => openEdit(t));
   return card;
 }
 
@@ -701,6 +742,7 @@ function renderDetail() {
   for (const s of storesOf(sel)) chips.appendChild(el('span', 'tag store', s));
   if (sel.room) chips.appendChild(el('span', 'tag', sel.room));
   if (sel.category) chips.appendChild(el('span', 'tag', sel.category));
+  if (sel.num) chips.appendChild(el('span', 'tag num', `#${sel.num}`));
   panel.appendChild(chips);
 
   const ownersRow = el('div', 'detail-row');
@@ -954,6 +996,7 @@ function fillDatalist(id, values, defaults) {
 
 function openEdit(t) {
   editingTask = t;
+  $('editTitle').textContent = t.num ? `Modifica attività #${t.num}` : 'Modifica attività';
   editForm.title.value = t.title || '';
   editForm.store.value = storesOf(t).join(', ');
   editForm.room.value = t.room || '';

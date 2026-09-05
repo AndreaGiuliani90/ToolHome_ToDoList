@@ -81,10 +81,12 @@ app.get('/api/tasks', requireUser, requireApproved, async (req, res) => {
 async function insertTask(c, originalText, user) {
   const id = newId();
   const ownerName = user.name || user.email.split('@')[0];
+  const maxRows = await query('SELECT COALESCE(MAX(num), 0) AS max FROM tasks');
+  const num = Number(maxRows[0].max) + 1;
   await query(
-    `INSERT INTO tasks (id, title, original_text, store, room, category, priority, status, ai_source, created_by, created_at, due_date, cost, owners, parked)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-    [id, c.title, originalText, c.store, c.room, c.category, c.priority, 'open', c.ai_source, user.id, now(), c.due, c.cost, ownerName, 0]
+    `INSERT INTO tasks (id, title, original_text, store, room, category, priority, status, ai_source, created_by, created_at, due_date, cost, owners, parked, num)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+    [id, c.title, originalText, c.store, c.room, c.category, c.priority, 'open', c.ai_source, user.id, now(), c.due, c.cost, ownerName, 0, num]
   );
   return (await query('SELECT * FROM tasks WHERE id = $1', [id]))[0];
 }
