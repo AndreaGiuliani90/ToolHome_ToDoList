@@ -669,9 +669,11 @@ function renderToast() {
   if (!ui.toast) return;
   const t = el('div', 'toast');
   t.appendChild(el('span', 'msg', ui.toast.msg));
-  const undo = el('button', 'undo', 'Annulla');
-  undo.addEventListener('click', undoToast);
-  t.appendChild(undo);
+  if (ui.toast.ids?.length) {
+    const undo = el('button', 'undo', 'Annulla');
+    undo.addEventListener('click', undoToast);
+    t.appendChild(undo);
+  }
   wrap.appendChild(t);
 }
 
@@ -811,31 +813,108 @@ $('tvBtnM').addEventListener('click', enterTv);
 
 const addDialog = $('addDialog');
 const addForm = $('addForm');
-$('fabAdd').addEventListener('click', () => {
-  addForm.text.value = '';
+let addMode = 'una';
+let photoData = null;
+
+function setAddMode(mode) {
+  addMode = mode;
+  $$('#addModes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
+  $('addSingleWrap').hidden = mode !== 'una';
+  $('addListWrap').hidden = mode !== 'elenco';
+  $('addPhotoWrap').hidden = mode !== 'foto';
+  $('addError').hidden = true;
+}
+$$('#addModes button').forEach((b) => b.addEventListener('click', () => setAddMode(b.dataset.mode)));
+
+function openAdd() {
+  addForm.reset();
+  photoData = null;
+  $('photoPreview').hidden = true;
+  $('photoHint').hidden = true;
+  setAddMode('una');
   addDialog.showModal();
-});
-$('addBtnD').addEventListener('click', () => {
-  addForm.text.value = '';
-  addDialog.showModal();
-});
+}
+$('fabAdd').addEventListener('click', openAdd);
+$('addBtnD').addEventListener('click', openAdd);
 $('cancelAddBtn').addEventListener('click', () => addDialog.close());
 
-addForm.addEventListener('submit', async () => {
-  const text = addForm.text.value.trim();
-  if (!text) return;
-  const temp = { id: `tmp-${Date.now()}`, title: text, status: 'open', pending: true, created_at: new Date().toISOString(), parked: 0 };
-  tasks.unshift(temp);
-  renderAll();
+async function resizeImage(file, max = 1600) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  return { mediaType: 'image/jpeg', base64: dataUrl.split(',')[1] };
+}
+
+$('pickPhotoBtn').addEventListener('click', () => $('photoInput').click());
+$('photoInput').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
   try {
-    const created = await api('/api/tasks', { method: 'POST', body: { text } });
-    tasks.splice(tasks.indexOf(temp), 1, created);
-    if (isDesktop.matches) ui.selectedId = created.id;
-  } catch (err) {
-    tasks.splice(tasks.indexOf(temp), 1);
-    alert(`Errore: ${err.message}`);
+    photoData = await resizeImage(file);
+    const img = $('photoPreview');
+    img.src = `data:${photoData.mediaType};base64,${photoData.base64}`;
+    img.hidden = false;
+    $('photoHint').hidden = false;
+    $('addError').hidden = true;
+  } catch {
+    $('addError').textContent = 'Non riesco a leggere questa immagine, prova con un altro formato';
+    $('addError').hidden = false;
   }
-  renderAll();
+});
+
+addForm.addEventListener('submit', async (e) => {
+  $('addError').hidden = true;
+
+  if (addMode === 'una') {
+    const text = addForm.text.value.trim();
+    if (!text) {
+      e.preventDefault();
+      return;
+    }
+    const temp = { id: `tmp-${Date.now()}`, title: text, status: 'open', pending: true, created_at: new Date().toISOString(), parked: 0 };
+    tasks.unshift(temp);
+    renderAll();
+    try {
+      const created = await api('/api/tasks', { method: 'POST', body: { text } });
+      tasks.splice(tasks.indexOf(temp), 1, created);
+      if (isDesktop.matches) ui.selectedId = created.id;
+    } catch (err) {
+      tasks.splice(tasks.indexOf(temp), 1);
+      alert(`Errore: ${err.message}`);
+    }
+    renderAll();
+    return;
+  }
+
+  // Elenco o foto: resta nel dialog finché l'analisi non è finita
+  e.preventDefault();
+  const btn = $('addSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = addMode === 'foto' ? '✨ Leggo la foto…' : '✨ Analizzo…';
+  try {
+    let created;
+    if (addMode === 'elenco') {
+      const text = addForm.list.value.trim();
+      if (!text) throw new Error('Scrivi almeno una voce');
+      created = await api('/api/tasks/bulk', { method: 'POST', body: { text } });
+    } else {
+      if (!photoData) throw new Error('Scegli prima una foto della lista');
+      created = await api('/api/tasks/photo', { method: 'POST', body: { image: photoData.base64, mediaType: photoData.mediaType } });
+    }
+    tasks.unshift(...created);
+    addDialog.close();
+    showToast(`${created.length} attività aggiunte ✨`, []);
+    renderAll();
+  } catch (err) {
+    $('addError').textContent = err.message;
+    $('addError').hidden = false;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Aggiungi';
 });
 
 // ---------- Ricerca ----------

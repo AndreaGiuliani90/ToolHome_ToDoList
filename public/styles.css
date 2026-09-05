@@ -351,6 +351,14 @@ dialog input:focus, dialog select:focus, dialog textarea:focus { outline: 2px so
 .dialog-actions { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .add-hint { font: 400 12.5px/1.5 var(--font-body); color: var(--muted); margin: -4px 0 14px; }
+.add-modes { display: flex; gap: 7px; margin-bottom: 14px; }
+.add-modes button {
+  padding: 8px 14px; border-radius: 999px; background: var(--chip-bg); color: var(--muted-2);
+  font: 500 12.5px/1 var(--font-body);
+}
+.add-modes button.on { background: var(--g-dark); color: #fff; font-weight: 600; }
+.photo-pick { width: 100%; text-align: center; padding: 22px 16px; border: 1.5px dashed #d9d3c8; background: #fdfbf7; border-radius: 14px; }
+.photo-preview { width: 100%; max-height: 260px; object-fit: contain; border-radius: 12px; margin-top: 10px; background: var(--chip-bg); }
 
 /* ---------- Animazioni ---------- */
 @keyframes ckPop { 0% { transform: scale(1); } 35% { transform: scale(1.32); } 70% { transform: scale(0.94); } 100% { transform: scale(1); } }

@@ -18,11 +18,11 @@ import {
   requireApproved,
   requireAdmin,
 } from './src/auth.js';
-import { classify, AI_ENABLED } from './src/ai.js';
+import { classify, extractTasks, extractTasksFromImage, AI_ENABLED } from './src/ai.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(here, 'public')));
 
@@ -78,19 +78,55 @@ app.get('/api/tasks', requireUser, requireApproved, async (req, res) => {
   res.json(tasks);
 });
 
+async function insertTask(c, originalText, user) {
+  const id = newId();
+  const ownerName = user.name || user.email.split('@')[0];
+  await query(
+    `INSERT INTO tasks (id, title, original_text, store, room, category, priority, status, ai_source, created_by, created_at, due_date, cost, owners, parked)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    [id, c.title, originalText, c.store, c.room, c.category, c.priority, 'open', c.ai_source, user.id, now(), c.due, c.cost, ownerName, 0]
+  );
+  return (await query('SELECT * FROM tasks WHERE id = $1', [id]))[0];
+}
+
 app.post('/api/tasks', requireUser, requireApproved, async (req, res) => {
   const text = (req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'Testo mancante' });
   const c = await classify(text);
-  const id = newId();
-  const ownerName = req.user.name || req.user.email.split('@')[0];
-  await query(
-    `INSERT INTO tasks (id, title, original_text, store, room, category, priority, status, ai_source, created_by, created_at, due_date, cost, owners, parked)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-    [id, c.title, text, c.store, c.room, c.category, c.priority, 'open', c.ai_source, req.user.id, now(), c.due, c.cost, ownerName, 0]
-  );
-  const rows = await query('SELECT * FROM tasks WHERE id = $1', [id]);
-  res.status(201).json(rows[0]);
+  res.status(201).json(await insertTask(c, text, req.user));
+});
+
+// Elenco testuale: più attività in un colpo solo
+app.post('/api/tasks/bulk', requireUser, requireApproved, async (req, res) => {
+  const text = (req.body?.text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Testo mancante' });
+  const extracted = await extractTasks(text);
+  if (!extracted.length) return res.status(400).json({ error: 'Nessuna attività riconosciuta nel testo' });
+  const created = [];
+  for (const c of extracted) created.push(await insertTask(c, c.title, req.user));
+  res.status(201).json(created);
+});
+
+// Foto di una lista scritta a mano o stampata
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+app.post('/api/tasks/photo', requireUser, requireApproved, async (req, res) => {
+  const { image, mediaType } = req.body || {};
+  if (!image || !PHOTO_TYPES.includes(mediaType)) {
+    return res.status(400).json({ error: 'Foto mancante o formato non supportato' });
+  }
+  try {
+    const extracted = await extractTasksFromImage(image, mediaType);
+    if (!extracted.length) return res.status(422).json({ error: 'Nessuna attività riconosciuta nella foto' });
+    const created = [];
+    for (const c of extracted) created.push(await insertTask(c, c.title, req.user));
+    res.status(201).json(created);
+  } catch (err) {
+    console.error('[ai] lettura foto fallita:', err.message);
+    if (err.status === 503 || err.status === 401 || /api key|authentication|x-api-key/i.test(err.message || '')) {
+      return res.status(503).json({ error: 'La lettura delle foto richiede la chiave AI: imposta ANTHROPIC_API_KEY sul server' });
+    }
+    res.status(502).json({ error: 'Non sono riuscito a leggere la foto, riprova' });
+  }
 });
 
 app.patch('/api/tasks/:id', requireUser, requireApproved, async (req, res) => {

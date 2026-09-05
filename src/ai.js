@@ -176,6 +176,87 @@ function sanitize(result, fallbackTitle) {
   };
 }
 
+const LIST_PROMPT = `Sei l'assistente di una lista di lavori e lavoretti di casa (trasloco appena fatto, Italia).
+Ricevi un elenco di attività — testo libero, appunti, o la trascrizione di una lista scritta a mano — e lo trasformi in attività strutturate.
+Il testo può contenere refusi o abbreviazioni: interpretali. Ignora righe che non sono attività (titoli, date, scarabocchi).
+
+Rispondi SOLO con un array JSON valido, senza markdown né testo extra. Ogni elemento ha i campi:
+"title", "stores" (array, anche vuoto), "room", "category", "priority", "cost", "due" — con le stesse regole seguenti:
+- "title": breve e pulito, massimo ~60 caratteri, prima lettera maiuscola
+- "stores": da 0 a 3 negozi dove si può risolvere, tra: "IKEA", "Leroy Merlin", "Brico", "OBI", "Amazon", "Supermercato", "Ferramenta", "Farmacia", "Mediaworld" (o il negozio citato nel testo)
+- "room": una tra "Cucina", "Bagno", "Camera", "Soggiorno", "Corridoio", "Balcone", "Garage", "Studio", "Tutta casa", oppure null
+- "category": una tra "Acquisto", "Montaggio", "Riparazione", "Pulizia", "Elettricità", "Idraulica", "Decorazione", "Burocrazia", "Trasloco", "Altro"
+- "priority": "alta" | "media" | "bassa"
+- "cost": stima in euro (numero intero) se comporta una spesa, altrimenti null
+- "due": "YYYY-MM-DD" solo se indicato un termine, altrimenti null
+
+Massimo 50 attività.`;
+
+function parseJsonArray(raw) {
+  const cleaned = raw.replace(/```json|```/g, '').trim();
+  const parsed = JSON.parse(cleaned);
+  if (!Array.isArray(parsed)) throw new Error('Risposta non è un array');
+  return parsed;
+}
+
+function heuristicExtract(text) {
+  return text
+    .split(/\n|;|•/)
+    .map((line) => line.replace(/^\s*[-*·\d.)\]]+\s*/, '').trim())
+    .filter((line) => line.length > 2)
+    .slice(0, 50)
+    .map(heuristicClassify);
+}
+
+// Elenco testuale (più righe) → array di attività classificate
+export async function extractTasks(text) {
+  const fallback = heuristicExtract(text);
+  if (!client) return fallback;
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
+      output_config: { effort: 'low' },
+      system: `${LIST_PROMPT}\n\nOggi è ${new Date().toISOString().slice(0, 10)}.`,
+      messages: [{ role: 'user', content: text }],
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    const items = parseJsonArray(textBlock.text);
+    const out = items.map((item) => sanitize(item, String(item.title || '').slice(0, 80) || 'Attività')).filter((t) => t.title);
+    return out.length ? out : fallback;
+  } catch (err) {
+    console.error('[ai] estrazione elenco fallita, uso euristica:', err.message);
+    return fallback;
+  }
+}
+
+// Foto di una lista (scritta a mano o stampata) → array di attività classificate
+export async function extractTasksFromImage(base64, mediaType) {
+  if (!client) {
+    const err = new Error('La lettura delle foto richiede la chiave AI (ANTHROPIC_API_KEY)');
+    err.status = 503;
+    throw err;
+  }
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: `${LIST_PROMPT}\n\nOggi è ${new Date().toISOString().slice(0, 10)}.`,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: 'Leggi la lista in questa foto ed estrai le attività.' },
+        ],
+      },
+    ],
+  });
+  const textBlock = response.content.find((b) => b.type === 'text');
+  if (!textBlock) throw new Error('Nessun testo riconosciuto nella foto');
+  const items = parseJsonArray(textBlock.text);
+  return items.map((item) => sanitize(item, String(item.title || '').slice(0, 80) || 'Attività')).filter((t) => t.title);
+}
+
 export async function classify(text) {
   const fallback = heuristicClassify(text);
   if (!client) return fallback;

@@ -161,14 +161,29 @@
   <dialog id="addDialog">
     <form id="addForm" method="dialog">
       <h2>Nuova attività</h2>
-      <p class="add-hint">Scrivila come la diresti: penso io a negozio, stanza, tipo, costo e scadenza. ✨</p>
-      <label>Cosa c'è da fare?
-        <input name="text" type="text" autocomplete="off" placeholder="es. «tende oscuranti camera, misurare prima»" required>
+      <p class="add-hint">Scrivi come la diresti: penso io a negozio, stanza, tipo, costo e scadenza. ✨</p>
+      <div class="add-modes" id="addModes">
+        <button type="button" data-mode="una" class="on">Una</button>
+        <button type="button" data-mode="elenco">📝 Elenco</button>
+        <button type="button" data-mode="foto">📷 Foto</button>
+      </div>
+      <label id="addSingleWrap">Cosa c'è da fare?
+        <input name="text" type="text" autocomplete="off" placeholder="es. «tende oscuranti camera, misurare prima»">
       </label>
+      <label id="addListWrap" hidden>Incolla o scrivi l'elenco (una voce per riga)
+        <textarea name="list" rows="7" placeholder="lampadine E27 corridoio&#10;montare pensili cucina&#10;disdire luce vecchia casa…"></textarea>
+      </label>
+      <div id="addPhotoWrap" hidden>
+        <button type="button" class="btn photo-pick" id="pickPhotoBtn">📷 Scatta o scegli una foto della lista</button>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+        <img id="photoPreview" class="photo-preview" alt="" hidden>
+        <p class="add-hint" id="photoHint" hidden>L'AI leggerà la lista dalla foto e creerà un'attività per ogni voce.</p>
+      </div>
+      <p class="error" id="addError" hidden></p>
       <div class="dialog-actions">
         <span class="spacer"></span>
         <button type="button" class="btn" id="cancelAddBtn">Annulla</button>
-        <button type="submit" class="btn btn-primary">Aggiungi</button>
+        <button type="submit" class="btn btn-primary" id="addSubmitBtn">Aggiungi</button>
       </div>
     </form>
   </dialog>
