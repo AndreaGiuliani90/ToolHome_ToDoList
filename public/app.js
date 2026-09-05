@@ -47,8 +47,33 @@ async function route() {
 
 function showLogin() {
   show('view-login');
-  $('devLoginBtn').hidden = !config.devLogin;
-  if (config.googleClientId) mountGoogleButton();
+  if (config.mode === 'google') {
+    mountGoogleButton();
+  } else {
+    renderSimpleUsers();
+  }
+}
+
+function renderSimpleUsers() {
+  $('loginSubtitle').textContent = 'Chi sei?';
+  const container = $('simpleUsers');
+  container.replaceChildren(
+    ...(config.users || []).map((name) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn simple-user';
+      btn.textContent = name;
+      btn.addEventListener('click', async () => {
+        try {
+          me = await api('/api/auth/simple', { method: 'POST', body: { name } });
+          route();
+        } catch (err) {
+          $('loginError').textContent = err.message;
+          $('loginError').hidden = false;
+        }
+      });
+      return btn;
+    })
+  );
 }
 
 function mountGoogleButton() {
@@ -82,11 +107,6 @@ async function onGoogleCredential(response) {
     $('loginError').hidden = false;
   }
 }
-
-$('devLoginBtn').addEventListener('click', async () => {
-  me = await api('/api/auth/dev', { method: 'POST' });
-  route();
-});
 
 async function logout() {
   await api('/api/auth/logout', { method: 'POST' });

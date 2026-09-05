@@ -5,7 +5,14 @@ import { OAuth2Client } from 'google-auth-library';
 import { query, newId, now } from './db.js';
 
 export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-export const DEV_LOGIN = process.env.NODE_ENV !== 'production' && !GOOGLE_CLIENT_ID;
+
+// Modalità di accesso: con GOOGLE_CLIENT_ID si usa la login Google;
+// senza, l'accesso è un'autodichiarazione tra i nomi di SIMPLE_USERS ("Chi sei?").
+export const SIMPLE_USERS = (process.env.SIMPLE_USERS || 'Andrea,Stefania,Brunello')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+export const AUTH_MODE = GOOGLE_CLIENT_ID ? 'google' : 'simple';
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
   .split(',')
@@ -49,6 +56,22 @@ export async function findOrCreateUser({ email, name, picture }) {
   await query(
     'INSERT INTO users (id, email, name, picture, approved, is_admin, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
     [id, normalized, name || '', picture || '', isAdminEmail ? 1 : 0, isAdminEmail ? 1 : 0, now()]
+  );
+  return (await query('SELECT * FROM users WHERE id = $1', [id]))[0];
+}
+
+// Accesso semplice: il primo nome della lista è l'admin
+export async function findOrCreateSimpleUser(name) {
+  const match = SIMPLE_USERS.find((u) => u.toLowerCase() === String(name || '').trim().toLowerCase());
+  if (!match) return null;
+  const email = `${match.toLowerCase().replace(/[^a-z0-9]+/g, '-')}@famiglia.local`;
+  const rows = await query('SELECT * FROM users WHERE email = $1', [email]);
+  if (rows.length) return rows[0];
+  const id = newId();
+  const isAdmin = SIMPLE_USERS[0] === match ? 1 : 0;
+  await query(
+    'INSERT INTO users (id, email, name, picture, approved, is_admin, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [id, email, match, '', 1, isAdmin, now()]
   );
   return (await query('SELECT * FROM users WHERE id = $1', [id]))[0];
 }

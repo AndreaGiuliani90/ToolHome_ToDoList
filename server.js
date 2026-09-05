@@ -5,9 +5,11 @@ import cookieParser from 'cookie-parser';
 import { init, query, newId, now } from './src/db.js';
 import {
   GOOGLE_CLIENT_ID,
-  DEV_LOGIN,
+  AUTH_MODE,
+  SIMPLE_USERS,
   verifyGoogleCredential,
   findOrCreateUser,
+  findOrCreateSimpleUser,
   setSessionCookie,
   clearSessionCookie,
   currentUser,
@@ -27,7 +29,12 @@ app.use(express.static(path.join(here, 'public')));
 // ---------- Config e autenticazione ----------
 
 app.get('/api/config', (req, res) => {
-  res.json({ googleClientId: GOOGLE_CLIENT_ID || null, devLogin: DEV_LOGIN, aiEnabled: AI_ENABLED });
+  res.json({
+    mode: AUTH_MODE,
+    googleClientId: GOOGLE_CLIENT_ID || null,
+    users: AUTH_MODE === 'simple' ? SIMPLE_USERS : undefined,
+    aiEnabled: AI_ENABLED,
+  });
 });
 
 app.get('/api/me', async (req, res) => {
@@ -49,12 +56,12 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-app.post('/api/auth/dev', async (req, res) => {
-  if (!DEV_LOGIN) return res.status(403).json({ error: 'Login di sviluppo disabilitato' });
-  const user = await findOrCreateUser({ email: 'dev@localhost', name: 'Utente di sviluppo' });
-  await query('UPDATE users SET approved = 1, is_admin = 1 WHERE id = $1', [user.id]);
+app.post('/api/auth/simple', async (req, res) => {
+  if (AUTH_MODE !== 'simple') return res.status(403).json({ error: 'Accesso semplice disabilitato' });
+  const user = await findOrCreateSimpleUser(req.body?.name);
+  if (!user) return res.status(400).json({ error: 'Nome non riconosciuto' });
   setSessionCookie(res, user.id);
-  res.json({ ...publicUser(user), approved: true, isAdmin: true });
+  res.json(publicUser(user));
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -159,6 +166,6 @@ const port = process.env.PORT || 3000;
 await init();
 app.listen(port, () => {
   console.log(`Casa Tasks in ascolto su http://localhost:${port}`);
-  if (DEV_LOGIN) console.log('[auth] modalità sviluppo: login Google non configurato, attivo il login di sviluppo');
+  if (AUTH_MODE === 'simple') console.log(`[auth] accesso semplice ("Chi sei?") attivo per: ${SIMPLE_USERS.join(', ')}`);
   if (!AI_ENABLED) console.log('[ai] ANTHROPIC_API_KEY assente: classificazione euristica di base');
 });

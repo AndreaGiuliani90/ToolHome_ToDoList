@@ -59,6 +59,12 @@ body {
 }
 
 .logo { font-size: 64px; }
+
+.simple-users { display: flex; flex-direction: column; gap: 10px; width: min(320px, 100%); }
+.simple-users:empty { display: none; }
+.simple-users .simple-user { font-size: 1.15rem; padding: 14px; font-weight: 600; }
+body.tv .simple-users { width: min(480px, 100%); }
+body.tv .simple-users .simple-user { font-size: 1.5rem; padding: 20px; }
 h1 { margin: 0; font-size: 1.6rem; }
 .muted { color: var(--muted); }
 .error { color: var(--danger); }

@@ -9,7 +9,7 @@ Scrivi un'attività in linguaggio naturale («comprare lampadine E27 da IKEA per
 - ✍️ Inserimento in linguaggio naturale, classificazione automatica con Claude (Anthropic)
 - 🔎 Filtri istantanei per negozio, stanza, categoria, stato + ricerca testuale
 - ✅ Completamento, modifica manuale dei tag, note, priorità
-- 🔐 Login con Google; i nuovi utenti restano "in attesa" finché un admin non li approva
+- 🔐 Due modalità di accesso: **semplice** ("Chi sei?" tra i nomi di `SIMPLE_USERS`, default) oppure **Google** (impostando `GOOGLE_CLIENT_ID`; i nuovi utenti restano "in attesa" finché un admin non li approva)
 - 👥 Pagina admin per approvare/revocare gli utenti (la lista è condivisa tra gli approvati)
 - 📱 Ottimizzata per mobile e desktop, tema chiaro/scuro automatico
 - 📺 Modalità TV (pulsante 📺, o automatica sul browser Silk del Firestick): testi grandi e navigazione con le frecce del telecomando
@@ -22,7 +22,7 @@ npm install
 npm run dev
 ```
 
-Apri http://localhost:3000. Senza `GOOGLE_CLIENT_ID` configurato compare il pulsante **Accesso di sviluppo** (solo fuori produzione). Senza `ANTHROPIC_API_KEY` la classificazione usa un'euristica di base a parole chiave.
+Apri http://localhost:3000. Senza `GOOGLE_CLIENT_ID` compare l'accesso semplice **"Chi sei?"** (nomi da `SIMPLE_USERS`, default Andrea/Stefania/Brunello). Senza `ANTHROPIC_API_KEY` la classificazione usa un'euristica di base a parole chiave.
 
 Per provare l'AI in locale: copia `.env.example` in `.env`, metti la chiave e avvia con:
 
@@ -34,8 +34,9 @@ node --env-file=.env server.js
 
 | Variabile | Obbligatoria | Descrizione |
 |---|---|---|
-| `GOOGLE_CLIENT_ID` | Sì in produzione | Client ID OAuth di Google per il login |
-| `ADMIN_EMAILS` | Sì | Email (separate da virgola) approvate come admin al primo login |
+| `SIMPLE_USERS` | No | Nomi (separati da virgola) per l'accesso semplice; il primo è l'admin. Default: `Andrea,Stefania,Brunello` |
+| `GOOGLE_CLIENT_ID` | No | Se impostato, attiva la login Google al posto dell'accesso semplice |
+| `ADMIN_EMAILS` | Solo modalità Google | Email (separate da virgola) approvate come admin al primo login |
 | `SESSION_SECRET` | Consigliata | Stringa lunga casuale per firmare le sessioni |
 | `ANTHROPIC_API_KEY` | Consigliata | Chiave API Anthropic per la classificazione AI |
 | `AI_MODEL` | No | Default `claude-opus-5`; alternativa economica: `claude-haiku-4-5` |
