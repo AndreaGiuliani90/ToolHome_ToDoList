@@ -138,10 +138,15 @@
   <main id="view-tv" hidden>
     <div class="tv-head">
       <div class="tv-brand">Casa Tasks</div>
+      <div class="tv-tabs">
+        <button id="tvTabDash" class="on">Panoramica</button>
+        <button id="tvTabList">Tutte le attività</button>
+      </div>
       <div class="tv-date" id="tvDate"></div>
       <button class="tv-exit" id="tvExit">esci</button>
     </div>
-    <div class="tv-grid">
+    <div class="tv-list scr" id="tvList" hidden></div>
+    <div class="tv-grid" id="tvDash">
       <div style="min-width:0">
         <div class="tv-sec warm">Prossime scadenze</div>
         <div class="tv-due-list" id="tvDueList"></div>
@@ -157,6 +162,7 @@
         <div class="tv-alexa">«Alexa, cosa devo comprare da IKEA?»</div>
       </div>
     </div>
+    <div class="tv-hint">◀ ▶ cambia vista &nbsp;·&nbsp; ▲ ▼ scorri</div>
   </main>
 
   <!-- Admin -->

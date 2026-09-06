@@ -18,6 +18,7 @@ const ui = {
   selectedId: null,
   toast: null,             // {msg, ids}
   tv: false,
+  tvTab: 'dash',           // dash | lista
 };
 
 const celebrating = new Set();
@@ -821,12 +822,80 @@ function exitTv() {
   renderAll();
 }
 
+function tvRowEl(t) {
+  const row = el('div', 'tv-row' + (t.status === 'done' ? ' done' : ''));
+  row.appendChild(el('span', 'tv-num', t.num ? `#${t.num}` : ''));
+  const mid = el('div', 'tv-mid');
+  mid.appendChild(el('div', 'tv-title', t.title));
+  const meta = [storesOf(t).join(' · '), t.room, t.category, t.cost ? `~${Math.round(t.cost)} €` : null]
+    .filter(Boolean)
+    .join('  ·  ');
+  if (meta) mid.appendChild(el('div', 'tv-meta', meta));
+  row.appendChild(mid);
+  const due = fmtDue(t.due_date);
+  if (due && t.status !== 'done') row.appendChild(el('span', 'tv-pill' + (due.hot ? ' hot' : ''), due.label.toUpperCase()));
+  const own = el('div', 'tv-own');
+  for (const name of ownersOf(t)) {
+    const a = el('div', 'avatar sm', name.charAt(0).toUpperCase());
+    a.style.background = ownerGradient(name);
+    own.appendChild(a);
+  }
+  row.appendChild(own);
+  return row;
+}
+
+function renderTvList() {
+  const box = $('tvList');
+  const scroll = box.scrollTop;
+  box.replaceChildren();
+  const pool = tasks.filter((t) => !t.pending);
+  const active = pool.filter((t) => !t.parked);
+  const withDue = active.filter((t) => t.due_date).sort(byDue);
+  const noDue = active.filter((t) => !t.due_date).sort(byCreated);
+  const parked = pool.filter((t) => t.parked && t.status !== 'done');
+  const addGroup = (label, items, warm) => {
+    if (!items.length) return;
+    box.appendChild(el('div', 'tv-group-label' + (warm ? ' warm' : ''), label));
+    items.forEach((t) => box.appendChild(tvRowEl(t)));
+  };
+  addGroup(`In scadenza · ${withDue.length}`, withDue, true);
+  addGroup(`Senza scadenza · ${noDue.length}`, noDue);
+  addGroup(`In fondo · ${parked.length}`, parked);
+  if (!pool.length) box.appendChild(el('div', 'tv-clear', 'Lista vuota. Casa in pari.'));
+  box.scrollTop = scroll;
+}
+
+function setTvTab(tab) {
+  ui.tvTab = tab;
+  renderTv();
+}
+$('tvTabDash').addEventListener('click', () => setTvTab('dash'));
+$('tvTabList').addEventListener('click', () => setTvTab('lista'));
+
+// Telecomando / tastiera in modalità TV: ◀ ▶ cambia vista, ▲ ▼ scorre la lista
+document.addEventListener('keydown', (e) => {
+  if (!ui.tv) return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    setTvTab(ui.tvTab === 'dash' ? 'lista' : 'dash');
+    e.preventDefault();
+  } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && ui.tvTab === 'lista') {
+    $('tvList').scrollBy({ top: e.key === 'ArrowDown' ? 260 : -260, behavior: 'smooth' });
+    e.preventDefault();
+  }
+});
+
 function renderTv() {
   const open = tasks.filter((t) => t.status !== 'done' && !t.pending);
   const done = tasks.filter((t) => t.status === 'done').length;
   $('tvDate').textContent = `${new Date()
     .toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
     .replace(/^./, (c) => c.toUpperCase())} · ${open.length} da fare`;
+
+  $('tvTabDash').classList.toggle('on', ui.tvTab === 'dash');
+  $('tvTabList').classList.toggle('on', ui.tvTab === 'lista');
+  $('tvDash').hidden = ui.tvTab !== 'dash';
+  $('tvList').hidden = ui.tvTab !== 'lista';
+  if (ui.tvTab === 'lista') renderTvList();
 
   const dueTasks = open.filter((t) => t.due_date).sort(byDue).slice(0, 3);
   const list = $('tvDueList');

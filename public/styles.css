@@ -300,10 +300,41 @@ h1 { margin: 0; font: 600 30px/1.15 var(--font-display); letter-spacing: -0.02em
 
 /* ---------- TV ---------- */
 #view-tv {
-  min-height: 100vh; padding: 0; max-width: none;
+  height: 100vh; padding: 0; max-width: none;
   background: radial-gradient(1100px 520px at 12% -10%, #1e3f39 0%, #14150f 58%), #14150f;
-  color: #f4f2ee; display: grid; grid-template-rows: auto minmax(0, 1fr);
+  color: #f4f2ee; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
 }
+.tv-tabs { display: flex; gap: 8px; margin-left: 26px; }
+.tv-tabs button {
+  font: 600 12.5px/1 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(244, 242, 238, 0.55); padding: 9px 16px; border-radius: 999px;
+  background: rgba(244, 242, 238, 0.07);
+}
+.tv-tabs button.on { background: var(--g-green); color: #fff; }
+.tv-hint { padding: 10px 40px 16px; font: 500 13px/1 var(--font-body); color: rgba(244, 242, 238, 0.3); }
+
+/* Lista completa TV */
+.tv-list { padding: 18px 40px 24px; min-height: 0; }
+.tv-group-label {
+  font: 600 14px/1 var(--font-body); letter-spacing: 0.14em; text-transform: uppercase;
+  color: #7dd3ba; margin: 24px 0 14px;
+}
+.tv-group-label.warm { color: #ff9d7d; }
+.tv-group-label:first-child { margin-top: 4px; }
+.tv-row {
+  display: flex; align-items: center; gap: 18px;
+  background: rgba(244, 242, 238, 0.06); border-radius: 14px; padding: 13px 20px; margin-bottom: 10px;
+}
+.tv-row.done { opacity: 0.5; }
+.tv-row.done .tv-title { text-decoration: line-through; color: #7dd3ba; }
+.tv-num { flex: none; width: 54px; font: 600 15px/1 ui-monospace, Menlo, monospace; color: rgba(244, 242, 238, 0.35); }
+.tv-mid { flex: 1; min-width: 0; }
+.tv-title { font: 600 21px/1.2 var(--font-display); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.tv-meta { font: 500 14px/1.3 var(--font-body); color: rgba(244, 242, 238, 0.55); margin-top: 5px; }
+.tv-pill { flex: none; padding: 8px 13px; border-radius: 10px; background: rgba(232, 112, 90, 0.18); color: #f0a091; font: 700 15px/1 var(--font-body); }
+.tv-pill.hot { background: linear-gradient(135deg, #ffa072, #e8705a); color: #14150f; }
+.tv-own { display: flex; flex: none; }
+.tv-own .avatar.sm + .avatar.sm { border-color: #1f2019; }
 .tv-head { display: flex; align-items: center; gap: 16px; padding: 30px 40px 0; }
 .tv-brand { font: 600 15px/1 var(--font-body); letter-spacing: 0.14em; text-transform: uppercase; color: #7dd3ba; }
 .tv-date { font: 500 16px/1 var(--font-body); color: rgba(244, 242, 238, 0.55); margin-left: auto; }
